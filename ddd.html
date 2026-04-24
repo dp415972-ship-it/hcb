@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HCB Bank - Premium Banking</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&family=Montserrat:wght@800;900&display=swap');
+        
+        :root {
+            --hcb-primary: #0A1931;
+            --hcb-accent: #FFC947;
+            --hcb-secondary: #185ADB;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .hcb-gradient {
+            background: linear-gradient(135deg, #0A1931 0%, #185ADB 100%);
+        }
+
+        .gold-text {
+            background: linear-gradient(to right, #FFC947, #EFE2BA, #FFC947);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* PREMIUM BILL STYLES */
+        .bill-capture-container {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            background-color: #f8fafc;
+            padding: 20px;
+        }
+
+        .premium-bill {
+            background: white;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-family: 'Lexend', sans-serif;
+        }
+
+        .bill-header {
+            background: linear-gradient(160deg, #020617 0%, #1e40af 100%);
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bill-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            transform: rotate(30deg);
+        }
+
+        .success-icon-wrapper {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .amount-text {
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -1px;
+            background: linear-gradient(to bottom, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: right;
+            max-width: 65%;
+        }
+
+        .stamp {
+            border: 2px double #e2e8f0;
+            border-radius: 10px;
+            padding: 4px 10px;
+            display: inline-block;
+            transform: rotate(-10deg);
+            opacity: 0.4;
+        }
+
+        /* Loading Overlay */
+        #loader {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #FFC947;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .otp-input:focus {
+            box-shadow: 0 0 0 2px rgba(24, 90, 219, 0.2);
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <!-- Loading Overlay -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <p class="text-xs font-bold uppercase tracking-widest" id="loader-text">Đang xử lý...</p>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8">
+        <div class="w-full max-sm text-center space-y-12">
+            <div>
+                <div class="w-24 h-24 hcb-gradient rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3">
+                    <span class="text-white text-4xl font-black italic tracking-tighter">HCB</span>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-[#0A1931]">HCB Bank</h1>
+                <p class="text-slate-400 font-medium mt-2">Hạnh phúc - Cam kết - Bền vững</p>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div class="space-y-3">
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="login-user" value="0876299990" class="w-full pl-12 pr-4 py-5 rounded-2xl bg-white shadow-sm border border-slate-100 outline-none focus:border-[#185ADB] transition-all font-semibold">
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="login-pass" value="dinh2008" class="w-full pl-12 pr-4 py-5 rounded-2xl bg-white shadow-sm border border-slate-100 outline-none focus:border-[#185ADB] transition-all font-semibold">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-5 hcb-gradient text-white rounded-2xl font-bold text-lg shadow-xl active:scale-[0.98] transition-transform">
+                    Đăng nhập
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-xs font-bold hidden">Thông tin đăng nhập không chính xác!</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main-app" class="hidden min-h-screen flex flex-col pb-24 bg-slate-50">
+        <!-- Header -->
+        <header class="p-6 flex justify-between items-center bg-white/70 backdrop-blur-md sticky top-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 hcb-gradient rounded-xl flex items-center justify-center text-white font-black italic text-xs">HCB</div>
+                <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tài khoản</p>
+                    <p class="text-sm font-extrabold text-[#0A1931]">NGUYEN MINH QUAN</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 px-5 pt-4 overflow-y-auto">
+            <!-- Dashboard -->
+            <div id="tab-dashboard" class="tab-content space-y-8 animate-slide-up">
+                <div class="hcb-gradient rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-blue-900/30">
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center opacity-60 mb-2">
+                            <span class="text-[10px] font-bold uppercase tracking-[0.2em]">Số dư khả dụng</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mb-8">
+                            <h2 id="balance-display" class="text-4xl font-black tracking-tight">85,240,000</h2>
+                            <span class="text-lg font-bold gold-text">VND</span>
+                            <button onclick="toggleBalance()" class="ml-auto w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center">
+                                <i id="eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center pt-6 border-t border-white/10">
+                            <p class="font-mono text-sm tracking-widest">0088 •••• 5678</p>
+                            <span class="text-[8px] font-black italic uppercase gold-text">Priority Member</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-4">
+                    <button onclick="switchTab('transfer')" class="flex flex-col items-center gap-2">
+                        <div class="w-16 h-16 bg-white shadow-sm rounded-3xl flex items-center justify-center text-[#185ADB] active:scale-90 transition-transform">
+                            <i data-lucide="send" class="w-7 h-7"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Chuyển tiền</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2">
+                        <div class="w-16 h-16 bg-white shadow-sm rounded-3xl flex items-center justify-center text-[#185ADB]">
+                            <i data-lucide="qr-code" class="w-7 h-7"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Quét mã</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2">
+                        <div class="w-16 h-16 bg-white shadow-sm rounded-3xl flex items-center justify-center text-[#185ADB]">
+                            <i data-lucide="shield" class="w-7 h-7"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Bảo mật</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2">
+                        <div class="w-16 h-16 bg-white shadow-sm rounded-3xl flex items-center justify-center text-[#185ADB]">
+                            <i data-lucide="more-horizontal" class="w-7 h-7"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Tất cả</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Transfer Tab -->
+            <div id="tab-transfer" class="tab-content hidden space-y-6 animate-slide-up">
+                <div class="bg-white rounded-[2.5rem] p-7 space-y-6 shadow-sm border border-slate-100">
+                    <h3 class="font-black text-xl text-[#0A1931]">Chuyển tiền nhanh 24/7</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl">
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Ngân hàng thụ hưởng</label>
+                            <select id="bank-select" class="w-full bg-transparent border-none outline-none font-bold text-slate-800">
+                                <option value="Vietcombank">Vietcombank (VCB)</option>
+                                <option value="Techcombank">Techcombank (TCB)</option>
+                                <option value="MBBank">MBBank (MB)</option>
+                                <option value="Agribank">Agribank (VBA)</option>
+                            </select>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl">
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Số tài khoản</label>
+                            <input id="account-input" type="text" placeholder="Nhập số tài khoản" class="w-full bg-transparent font-bold text-lg">
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl">
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Tên người nhận</label>
+                            <input id="name-input" type="text" placeholder="HỌ TÊN NGƯỜI NHẬN" class="w-full bg-transparent font-black uppercase text-[#185ADB]">
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                            <label class="text-[10px] font-extrabold text-blue-400 uppercase block mb-1">Số tiền chuyển</label>
+                            <input id="amount-input" type="number" placeholder="0" class="w-full bg-transparent text-2xl font-black text-[#185ADB]">
+                        </div>
+                    </div>
+                    <button onclick="showOtp()" class="w-full py-5 rounded-2xl hcb-gradient text-white font-bold text-lg shadow-xl active:scale-95 transition-transform">Tiếp tục</button>
+                </div>
+            </div>
+
+            <!-- OTP Screen -->
+            <div id="otp-view" class="hidden text-center space-y-12 py-12 animate-slide-up">
+                <div class="w-20 h-20 hcb-gradient rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-2xl">
+                    <i data-lucide="lock" class="w-10 h-10"></i>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-black text-[#0A1931]">Xác thực giao dịch</h3>
+                    <p class="text-sm text-slate-500 mt-2 px-10">Nhập mã PIN xác nhận (Mã: <span class="font-bold text-[#185ADB]">220820</span>)</p>
+                </div>
+                <div class="flex justify-center gap-2">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                    <input maxlength="1" class="otp-input w-10 h-14 bg-white border border-slate-200 rounded-xl text-center text-xl font-black focus:border-[#185ADB] outline-none transition-all" type="password">
+                </div>
+                <button onclick="hideOtp()" class="text-slate-400 font-bold uppercase text-xs">Hủy bỏ</button>
+            </div>
+
+            <!-- PREMIUM BILL VIEW (INTEGRATED) -->
+            <div id="bill-view" class="hidden animate-slide-up pb-10">
+                <div id="bill-capture-area" class="bill-capture-container">
+                    <div class="premium-bill">
+                        <div class="bill-header">
+                            <div class="success-icon-wrapper">
+                                <i data-lucide="check" class="text-green-400 w-10 h-10"></i>
+                            </div>
+                            <p class="text-[10px] font-bold text-blue-200 uppercase tracking-[4px] mb-2">Giao dịch thành công</p>
+                            <h1 id="bill-amount" class="amount-text text-4xl font-black mb-1">0</h1>
+                            <p class="text-xs font-bold text-white/60">VND</p>
+                            
+                            <div class="mt-6 inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
+                                <div class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                                <span class="text-[9px] font-bold text-white/80 uppercase tracking-wider">Hệ thống HCB Verified</span>
+                            </div>
+                        </div>
+
+                        <div class="p-8 bg-white">
+                            <div class="space-y-1">
+                                <div class="info-row">
+                                    <span class="label">Từ tài khoản</span>
+                                    <div class="text-right">
+                                        <p class="value">0876299990</p>
+                                        <p class="text-[10px] font-medium text-slate-400 uppercase">NGUYEN MINH QUAN</p>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Đến thụ hưởng</span>
+                                    <div class="text-right">
+                                        <p id="bill-name" class="value text-blue-700 uppercase">---</p>
+                                        <p id="bill-acc" class="text-[10px] font-medium text-slate-500">---</p>
+                                        <p id="bill-bank" class="text-[10px] font-bold text-slate-400 uppercase mt-1">---</p>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Nội dung</span>
+                                    <span class="value uppercase">CHUYEN TIEN 247</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Thời gian</span>
+                                    <span id="bill-time" class="value">--/--/-- • --:--:--</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Mã giao dịch</span>
+                                    <span class="value font-mono text-blue-600">FT220820886699</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-10 pt-6 border-t border-dashed border-slate-200 text-center relative">
+                                <div class="absolute -top-3 -left-12 w-6 h-6 bg-slate-50 rounded-full"></div>
+                                <div class="absolute -top-3 -right-12 w-6 h-6 bg-slate-50 rounded-full"></div>
+                                <div class="flex justify-center items-center gap-3 mb-4">
+                                    <div class="w-8 h-8 hcb-gradient rounded-lg flex items-center justify-center text-white font-black italic text-[10px]">HCB</div>
+                                    <div class="text-left">
+                                        <p class="text-[9px] font-black text-slate-800 tracking-tighter uppercase">HCB Digital Bank</p>
+                                        <p class="text-[7px] text-slate-400 font-bold uppercase">hcb-bank.com.vn</p>
+                                    </div>
+                                </div>
+                                <div class="stamp">
+                                    <p class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Giao dịch điện tử</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-5 space-y-3 mt-4">
+                    <button id="btn-save-bill" class="w-full py-5 hcb-gradient text-white rounded-2xl font-bold text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <i data-lucide="download-cloud" class="w-5 h-5"></i> Lưu biên lai về máy
+                    </button>
+                    <button onclick="switchTab('dashboard')" class="w-full py-4 border border-slate-200 text-slate-400 rounded-2xl font-bold text-xs uppercase tracking-widest">Về trang chủ</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Nav -->
+        <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 h-24 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-4 z-50">
+            <button onclick="switchTab('dashboard')" class="nav-item flex flex-col items-center gap-1 text-[#185ADB]" data-tab="dashboard">
+                <i data-lucide="layout-grid" class="w-6 h-6"></i>
+                <span class="text-[9px] font-black uppercase">Trang chủ</span>
+            </button>
+            <button onclick="switchTab('transfer')" class="nav-item flex flex-col items-center gap-1 text-slate-400" data-tab="transfer">
+                <i data-lucide="repeat" class="w-6 h-6"></i>
+                <span class="text-[9px] font-black uppercase">Chuyển tiền</span>
+            </button>
+            <div class="relative -top-8">
+                <button class="w-16 h-16 hcb-gradient rounded-[1.8rem] flex items-center justify-center text-white shadow-2xl rotate-45">
+                    <i data-lucide="qr-code" class="w-7 h-7 -rotate-45"></i>
+                </button>
+            </div>
+            <button class="flex flex-col items-center gap-1 text-slate-400">
+                <i data-lucide="credit-card" class="w-6 h-6"></i>
+                <span class="text-[9px] font-black uppercase">Dịch vụ thẻ</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-slate-400">
+                <i data-lucide="user" class="w-6 h-6"></i>
+                <span class="text-[9px] font-black uppercase">Cá nhân</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let balance = 85240000;
+        let isShowBalance = true;
+
+        // Login Logic
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if (user === "0876299990" && pass === "dinh2008") {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById('otp-view').classList.add('hidden');
+            document.getElementById('bill-view').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            
+            const target = document.getElementById('tab-' + tabId);
+            if(target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.toggle('text-[#185ADB]', btn.dataset.tab === tabId);
+                btn.classList.toggle('text-slate-400', btn.dataset.tab !== tabId);
+            });
+        }
+
+        function toggleBalance() {
+            isShowBalance = !isShowBalance;
+            document.getElementById('balance-display').innerText = isShowBalance ? balance.toLocaleString() : '••••••••';
+            const icon = document.getElementById('eye-icon');
+            icon.setAttribute('data-lucide', isShowBalance ? 'eye' : 'eye-off');
+            lucide.createIcons();
+        }
+
+        function showOtp() {
+            const amount = document.getElementById('amount-input').value;
+            if(!amount || amount <= 0) return;
+            
+            document.getElementById('tab-transfer').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.add('hidden');
+            document.getElementById('otp-view').classList.remove('hidden');
+            
+            const inputs = document.querySelectorAll('.otp-input');
+            inputs.forEach(i => i.value = "");
+            inputs[0].focus();
+
+            inputs.forEach((input, index) => {
+                input.oninput = (e) => {
+                    if (e.target.value && index < inputs.length - 1) inputs[index + 1].focus();
+                    if (Array.from(inputs).every(i => i.value)) verifyTransfer();
+                };
+                input.onkeydown = (e) => {
+                    if (e.key === "Backspace" && !input.value && index > 0) inputs[index - 1].focus();
+                };
+            });
+        }
+
+        function hideOtp() {
+            document.getElementById('otp-view').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            document.getElementById('tab-transfer').classList.remove('hidden');
+        }
+
+        function verifyTransfer() {
+            const inputs = document.querySelectorAll('.otp-input');
+            let otpValue = "";
+            inputs.forEach(i => otpValue += i.value);
+
+            if (otpValue === "220820") {
+                const amount = parseInt(document.getElementById('amount-input').value);
+                balance -= amount;
+                
+                // Update Bill UI
+                document.getElementById('bill-amount').innerText = amount.toLocaleString();
+                document.getElementById('bill-acc').innerText = document.getElementById('account-input').value;
+                document.getElementById('bill-name').innerText = document.getElementById('name-input').value || "KHÁCH HÀNG THỤ HƯỞNG";
+                document.getElementById('bill-bank').innerText = document.getElementById('bank-select').value;
+                
+                const now = new Date();
+                document.getElementById('bill-time').innerText = now.toLocaleDateString('vi-VN') + ' • ' + now.toLocaleTimeString('vi-VN');
+
+                document.getElementById('otp-view').classList.add('hidden');
+                document.getElementById('bill-view').classList.remove('hidden');
+                document.getElementById('balance-display').innerText = balance.toLocaleString();
+            } else {
+                inputs.forEach(i => i.value = "");
+                inputs[0].focus();
+            }
+        }
+
+        // SAVE PREMIUM BILL
+        document.getElementById('btn-save-bill').addEventListener('click', function() {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
+            const captureArea = document.getElementById('bill-capture-area');
+            
+            setTimeout(() => {
+                html2canvas(captureArea, {
+                    backgroundColor: "#f8fafc",
+                    scale: 3,
+                    useCORS: true,
+                    borderRadius: 40
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'HCB-Premium-Receipt-' + Date.now() + '.png';
+                    link.href = canvas.toDataURL('image/png', 1.0);
+                    link.click();
+                    loader.style.display = 'none';
+                }).catch(() => {
+                    loader.style.display = 'none';
+                });
+            }, 800);
+        });
+    </script>
+</body>
+</html>
